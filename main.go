@@ -13,7 +13,6 @@ import (
 const threads int = 4
 const server string = "192.168.37.128:53"
 const domain string = "testi.hosti"
-const charset = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 type dnsRunner struct {
 	client *dns.Client
