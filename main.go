@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	"github.com/miekg/dns"
 )
@@ -36,9 +37,15 @@ func readLines(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
-func threadRunner(dr dnsRunner, wordList []string, domain string, threadId int) {
+func durationLogger(start time.Time, durationLog *[]time.Duration) {
+	elapsed := time.Since(start)
+	*durationLog = append(*durationLog, elapsed)
+}
+
+func threadRunner(dr dnsRunner, wordList []string, domain string, threadId int, durationLog *[]time.Duration) {
 	m := new(dns.Msg)
 	for i := dr.start; i < dr.end; i++ {
+		defer durationLogger(time.Now(), durationLog)
 		m.SetQuestion(wordList[i]+"."+domain+".", dns.TypeA)
 		in, rtt, err := dr.client.Exchange(m, dr.server)
 		fmt.Println("=================== THREAD", threadId, "======================")
@@ -50,6 +57,7 @@ func main() {
 	wordList, _ := readLines("words_alpha.txt")
 	var d [threads]dnsRunner
 	var wg sync.WaitGroup
+	var durationLog *[]time.Duration
 
 	for i := 0; i < threads; i++ {
 		d[i] = dnsRunner{
@@ -62,7 +70,7 @@ func main() {
 		i := i
 		go func() {
 			defer wg.Done()
-			threadRunner(d[i], wordList, domain, i)
+			threadRunner(d[i], wordList, domain, i, durationLog)
 		}()
 	}
 
