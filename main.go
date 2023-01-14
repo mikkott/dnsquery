@@ -13,7 +13,6 @@ import (
 const threads int = 4
 const server string = "192.168.37.128:53"
 const domain string = "testi.hosti"
-const charset = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 type dnsRunner struct {
 	client *dns.Client
@@ -42,13 +41,13 @@ func durationLogger(start time.Time, durationLog *[]time.Duration) {
 	*durationLog = append(*durationLog, elapsed)
 }
 
-func threadRunner(dr dnsRunner, wordList []string, domain string, threadId int, durationLog *[]time.Duration) {
+func threadRunner(dr dnsRunner, wordList []string, domain string, threadID int, durationLog *[]time.Duration) {
 	m := new(dns.Msg)
 	for i := dr.start; i < dr.end; i++ {
 		defer durationLogger(time.Now(), durationLog)
 		m.SetQuestion(wordList[i]+"."+domain+".", dns.TypeA)
 		in, rtt, err := dr.client.Exchange(m, dr.server)
-		fmt.Println("=================== THREAD", threadId, "======================")
+		fmt.Println("=================== THREAD", threadID, "======================")
 		fmt.Println(in.Answer, rtt, err)
 	}
 }
