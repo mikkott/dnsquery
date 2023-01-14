@@ -12,6 +12,7 @@ import (
 const threads int = 4
 const server string = "192.168.37.128:53"
 const domain string = "testi.hosti"
+const charset = "abcdefghijklmnopqrstuvwxyz" + "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
 type dnsRunner struct {
 	client *dns.Client
@@ -35,11 +36,11 @@ func readLines(path string) ([]string, error) {
 	return lines, scanner.Err()
 }
 
-func threadRunner(s dnsRunner, wordList []string, domain string, threadId int) {
+func threadRunner(dr dnsRunner, wordList []string, domain string, threadId int) {
 	m := new(dns.Msg)
-	for i := s.start; i < s.end; i++ {
+	for i := dr.start; i < dr.end; i++ {
 		m.SetQuestion(wordList[i]+"."+domain+".", dns.TypeA)
-		in, rtt, err := s.client.Exchange(m, s.server)
+		in, rtt, err := dr.client.Exchange(m, dr.server)
 		fmt.Println("=================== THREAD", threadId, "======================")
 		fmt.Println(in.Answer, rtt, err)
 	}
@@ -47,23 +48,23 @@ func threadRunner(s dnsRunner, wordList []string, domain string, threadId int) {
 
 func main() {
 	wordList, _ := readLines("words_alpha.txt")
-
-	var s [threads]dnsRunner
-
+	var d [threads]dnsRunner
 	var wg sync.WaitGroup
+
 	for i := 0; i < threads; i++ {
-		s[i] = dnsRunner{
+		d[i] = dnsRunner{
 			client: new(dns.Client),
 			server: server,
-			start:  len(wordList) / 4 * i,
-			end:    len(wordList) / 4 * (i + 1),
+			start:  len(wordList) / threads * i,
+			end:    len(wordList) / threads * (i + 1),
 		}
 		wg.Add(1)
 		i := i
 		go func() {
 			defer wg.Done()
-			threadRunner(s[i], wordList, domain, i)
+			threadRunner(d[i], wordList, domain, i)
 		}()
 	}
+
 	wg.Wait()
 }
